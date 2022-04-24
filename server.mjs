@@ -25,34 +25,17 @@ async function main(){
   
   
     // Connect to the MongoDB cluster
-      const messages = []
-      await client.connect();
-
-      collection = client.db("sdl").collection("messages")
-      const options = {
-        // sort returned documents in ascending order by title (A->Z)
-        sort: { date: 1 },
-    
-      };
-
-      const cursor = collection.find({}, options)
-
-      await cursor.forEach(item => messages.push(item))
 
 
 
       // const res = await collection.insertOne({content: "HAADIOGNAIOD"})
 
-      // Make the appropriate DB calls
-      await  listDatabases(client);
-      
+      // Make the appropriate DB calls      
       app.get('/', (req, res) => {
         res.sendFile(__dirname + '/index.html');
       });
       
-      io.on('connection', (socket) => {
-        console.log(messages.length)
-        
+      io.on('connection', (socket) => {        
         socket.on('chat message', msg => {
           console.log(`message: ${msg.content}`)
           msg.date = new Date()
@@ -65,9 +48,24 @@ async function main(){
           io.emit('chat message', msg)
         })
       
-        socket.on('user connection', username => {
-          io.emit('fetch messages', messages)
+        socket.on('user connection', async username => {
           console.log('user ' + username + ' connected')
+          
+          const messages = []
+          await client.connect();
+    
+          collection = client.db("sdl").collection("messages")
+          const options = {
+            // sort returned documents in ascending order by title (A->Z)
+            sort: { date: 1 },
+            
+          };
+    
+          const cursor = collection.find({}, options)
+          
+          await cursor.forEach(item => messages.push(item))
+          
+          io.emit('fetch messages', messages)
         })
         
         socket.on('disconnect', () => {
